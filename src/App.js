@@ -5,6 +5,9 @@ import { SectionTitle } from 'components/SectionTitle';
 import { ContactForm } from 'components/ContactForm';
 import { ContactList } from 'components/ContactList';
 import Filter from './components/Filter';
+import IconButton from './components/IconButton';
+import { ReactComponent as AddIcon } from './icons/add.svg';
+import Modal from './components/Modal';
 
 class App extends Component {
   state = {
@@ -15,7 +18,34 @@ class App extends Component {
       { id: 'id-4', name: 'Annie Copeland', number: '227-91-26' },
     ],
     filter: '',
+    showModal: false,
   };
+
+  componentDidMount() {
+    const contacts = localStorage.getItem('contacts');
+    const parsedContacts = JSON.parse(contacts);
+
+    if (parsedContacts) {
+      this.setState({ contacts: parsedContacts });
+    }
+  }
+
+  componentDidUpdate(prevProps, prevState) {
+    const nextContacts = this.state.contacts;
+    const prevContacts = prevState.contacts;
+
+    if (nextContacts !== prevContacts) {
+      console.log('Обновилось поле сontacts, записываю todos в хранилище');
+      localStorage.setItem('contacts', JSON.stringify(nextContacts));
+    }
+
+    if (
+      nextContacts.length > prevContacts.length &&
+      prevContacts.length !== 0
+    ) {
+      this.toggleModal();
+    }
+  }
 
   addContact = opt => {
     const contact = {
@@ -46,7 +76,7 @@ class App extends Component {
     this.setState({ filter: e.currentTarget.value });
   };
 
-  getVisibleTodos = () => {
+  getVisibleConcats = () => {
     const { filter, contacts } = this.state;
     const normalizedFilter = filter.toLowerCase();
 
@@ -55,19 +85,32 @@ class App extends Component {
     );
   };
 
+  toggleModal = () => {
+    this.setState(({ showModal }) => ({
+      showModal: !showModal,
+    }));
+  };
+
   render() {
-    const { contacts, filter } = this.state;
-    const visibleTodos = this.getVisibleTodos();
+    const { contacts, filter, showModal } = this.state;
+    const visibleContacts = this.getVisibleConcats();
 
     return (
       <Container>
         <SectionTitle title={'Phonebook'}></SectionTitle>
-        <ContactForm onSubmit={this.addContact}></ContactForm>
+        <IconButton onClick={this.toggleModal} aria-label="Add contact">
+          <AddIcon width="40" height="40" fill="#fff" />
+        </IconButton>
+        {showModal && (
+          <Modal onClose={this.toggleModal}>
+            <ContactForm onSubmit={this.addContact}></ContactForm>
+          </Modal>
+        )}
         <SectionTitle title={'Contacts'}></SectionTitle>
         <Filter value={filter} onChange={this.changeFilter} />
         {contacts !== undefined ? (
           <ContactList
-            contacts={visibleTodos}
+            contacts={visibleContacts}
             onDeleteContact={this.deleteContact}
           />
         ) : (
